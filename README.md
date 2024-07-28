@@ -15,7 +15,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-  "yourusername/diagnostic-comments.nvim",
+  "ktappdev/diagnostic-comments.nvim",
   config = function()
     require("diagnostic_comments").setup({
       -- your configuration here
@@ -28,7 +28,7 @@ Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
 
 ```lua
 use {
-  'yourusername/diagnostic-comments.nvim',
+  'ktappdev/diagnostic-comments.nvim',
   config = function()
     require('diagnostic_comments').setup({
       -- your configuration here
@@ -73,6 +73,7 @@ Contributions are welcome! Here's how you can contribute:
 5. Create a new Pull Request
 
 Before submitting a pull request, please ensure:
+
 - Your code follows the existing style to maintain consistency
 - You've added tests if you've introduced new functionality
 - All tests pass when you run the test suite
