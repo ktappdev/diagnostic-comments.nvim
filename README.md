@@ -15,7 +15,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-  "yourusername/diagnostic-comments.nvim",
+  "ktappdev/diagnostic-comments.nvim",
   config = function()
     require("diagnostic_comments").setup({
       -- your configuration here
@@ -28,7 +28,7 @@ Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
 
 ```lua
 use {
-  'yourusername/diagnostic-comments.nvim',
+  'ktappdev/diagnostic-comments.nvim',
   config = function()
     require('diagnostic_comments').setup({
       -- your configuration here
