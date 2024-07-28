@@ -17,7 +17,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 {
   "ktappdev/diagnostic-comments.nvim",
   config = function()
-    require("diagnostic_comments").setup({
+    require("diagnostic-comments").setup({
       -- your configuration here
     })
   end,
@@ -30,7 +30,7 @@ Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
 use {
   'ktappdev/diagnostic-comments.nvim',
   config = function()
-    require('diagnostic_comments').setup({
+    require('diagnostic-comments').setup({
       -- your configuration here
     })
   end
@@ -42,7 +42,7 @@ use {
 Here's an example of how to configure the plugin:
 
 ```lua
-require('diagnostic_comments').setup({
+require('diagnostic-comments').setup({
   comment_style = "above",  -- or "inline"
   keymap = "<leader>dc",    -- customize this to your preferred key mapping
 })
