@@ -10,16 +10,14 @@ M.namespace = vim.api.nvim_create_namespace("diagnostic_comments")
 M.config = {
 	comment_style = "inline", -- 'above' or 'inline'
 	keymap = "<leader>dc", -- default keymap to toggle diagnostic comments
-	comment_prefix = "--", -- prefix for comments
+	comment_prefix = "//", -- prefix for comments
 	use_virtual_text = true, -- toggle between virtual and actual comments
 }
 
 -- Setup function to initialize the plugin with user config
 function M.setup(opts)
-	-- Merge user config with default config
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
-	-- Set up the keymap for toggling diagnostic comments
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymap,
@@ -40,28 +38,21 @@ function M.update_diagnostic_comment()
 		M.remove_actual_comment(current_line)
 	end
 
-	-- Get diagnostics for the current line
+	-- Get diagnostics for the current line only
 	local diagnostics = vim.diagnostic.get(0, { lnum = current_line })
 
 	if #diagnostics > 0 then
-		local diagnostic = diagnostics[1] -- We'll use the first diagnostic if there are multiple
+		local diagnostic = diagnostics[1] -- Use the first diagnostic if there are multiple
 		local message = diagnostic.message
 		local severity = vim.diagnostic.severity[diagnostic.severity]
 		local comment_text = string.format("%s %s: %s", M.config.comment_prefix, severity, message)
 
 		if M.config.use_virtual_text then
 			-- Add virtual text
-			if M.config.comment_style == "above" then
-				vim.api.nvim_buf_set_extmark(0, M.namespace, current_line, 0, {
-					virt_lines = { { { comment_text, "Comment" } } },
-					virt_lines_above = true,
-				})
-			else
-				vim.api.nvim_buf_set_extmark(0, M.namespace, current_line, 0, {
-					virt_text = { { comment_text, "Comment" } },
-					virt_text_pos = "eol",
-				})
-			end
+			vim.api.nvim_buf_set_extmark(0, M.namespace, current_line, 0, {
+				virt_text = { { comment_text, "Comment" } },
+				virt_text_pos = "eol",
+			})
 		else
 			-- Add actual comment
 			M.add_actual_comment(current_line, comment_text)
@@ -75,27 +66,27 @@ end
 -- Function to add an actual comment to the buffer
 function M.add_actual_comment(line, comment_text)
 	local current_line_text = vim.api.nvim_buf_get_lines(0, line, line + 1, false)[1]
+	local new_line
 	if M.config.comment_style == "above" then
-		vim.api.nvim_buf_set_lines(0, line, line, false, { comment_text, current_line_text })
+		new_line = comment_text
+		vim.api.nvim_buf_set_lines(0, line, line, false, { new_line })
 	else
-		local new_line = current_line_text .. " " .. comment_text
+		new_line = current_line_text .. " " .. comment_text
 		vim.api.nvim_buf_set_lines(0, line, line + 1, false, { new_line })
 	end
 end
 
 -- Function to remove the actual diagnostic comment from the current line
 function M.remove_actual_comment(line)
-	local lines = vim.api.nvim_buf_get_lines(0, line, line + 2, false)
-	local new_lines = {}
-	for i, l in ipairs(lines) do
-		if i == 1 and M.config.comment_style == "inline" then
-			l = l:gsub("%s*" .. vim.pesc(M.config.comment_prefix) .. " %u+: .*$", "")
+	local current_line_text = vim.api.nvim_buf_get_lines(0, line, line + 1, false)[1]
+	if M.config.comment_style == "above" then
+		if current_line_text:match("^" .. vim.pesc(M.config.comment_prefix) .. " %u+: ") then
+			vim.api.nvim_buf_set_lines(0, line, line + 1, false, {})
 		end
-		if not l:match("^" .. vim.pesc(M.config.comment_prefix) .. " %u+: ") then
-			table.insert(new_lines, l)
-		end
+	else
+		local new_line = current_line_text:gsub("%s*" .. vim.pesc(M.config.comment_prefix) .. " %u+: .*$", "")
+		vim.api.nvim_buf_set_lines(0, line, line + 1, false, { new_line })
 	end
-	vim.api.nvim_buf_set_lines(0, line, line + #lines, false, new_lines)
 end
 
 -- Track whether comment is currently visible on the current line
