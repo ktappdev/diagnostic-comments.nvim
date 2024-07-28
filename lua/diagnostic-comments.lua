@@ -1,24 +1,24 @@
--- Create a table to hold the diagnostic comments plugin
+-- Diagnostic Comments Plugin for Neovim
+-- This plugin allows for toggling diagnostic comments, either as virtual text or actual comments in the buffer.
+
 local M = {}
 
--- Create a namespace for the diagnostic comments
+-- Create a unique namespace for our plugin
 M.namespace = vim.api.nvim_create_namespace("diagnostic_comments")
 
--- Define the default configuration for the plugin
+-- Default configuration options
 M.config = {
-	-- Style of comment: 'above' or 'inline'
-	comment_style = "above",
-	-- Keymap to toggle diagnostic comments
-	keymap = "<leader>dc",
-	-- Prefix for comments (new option)
-	comment_prefix = "--",
+	comment_style = "above", -- 'above' or 'inline'
+	keymap = "<leader>dc", -- default keymap to toggle diagnostic comments
+	comment_prefix = "--", -- prefix for comments
+	use_virtual_text = true, -- toggle between virtual and actual comments
 }
 
--- Function to set up the plugin with optional configuration
+-- Setup function to initialize the plugin with user config
 function M.setup(opts)
-	-- Merge the default configuration with the user-provided options
+	-- Merge user config with default config
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
-	-- Set up the keymap to toggle diagnostic comments
+	-- Set up the keymap for toggling diagnostic comments
 	vim.api.nvim_set_keymap(
 		"n",
 		M.config.keymap,
@@ -28,61 +28,98 @@ function M.setup(opts)
 	print("Diagnostic comments plugin setup complete")
 end
 
--- Function to update the diagnostic comments
+-- Function to update diagnostic comments
 function M.update_diagnostic_comments()
 	print("Updating diagnostic comments")
-	-- Clear the namespace to remove old comments
-	vim.api.nvim_buf_clear_namespace(0, M.namespace, 0, -1)
-	-- Get the diagnostics for the current buffer
+	-- Clear existing comments
+	if M.config.use_virtual_text then
+		vim.api.nvim_buf_clear_namespace(0, M.namespace, 0, -1)
+	else
+		M.remove_actual_comments()
+	end
+	-- Get diagnostics for the current buffer
 	local diagnostics = vim.diagnostic.get(0)
 	print("Number of diagnostics: " .. #diagnostics)
-	-- Loop through each diagnostic and create a comment
+	-- Add comments for each diagnostic
 	for _, diagnostic in ipairs(diagnostics) do
 		local line = diagnostic.lnum
 		local message = diagnostic.message
-		local severity = diagnostic.severity
-		-- Create the comment text with the prefix, severity, and message
-		local comment_text =
-			string.format("%s %s: %s", M.config.comment_prefix, vim.diagnostic.severity[severity], message)
-		-- Depending on the comment style, create a virtual line above or inline comment
-		if M.config.comment_style == "above" then
-			vim.api.nvim_buf_set_extmark(0, M.namespace, line, 0, {
-				virt_lines = { { { comment_text, "Comment" } } },
-				virt_lines_above = true,
-			})
+		local severity = vim.diagnostic.severity[diagnostic.severity]
+		local comment_text = string.format("%s %s: %s", M.config.comment_prefix, severity, message)
+		if M.config.use_virtual_text then
+			-- Add virtual text
+			if M.config.comment_style == "above" then
+				vim.api.nvim_buf_set_extmark(0, M.namespace, line, 0, {
+					virt_lines = { { { comment_text, "Comment" } } },
+					virt_lines_above = true,
+				})
+			else
+				vim.api.nvim_buf_set_extmark(0, M.namespace, line, 0, {
+					virt_text = { { comment_text, "Comment" } },
+					virt_text_pos = "eol",
+				})
+			end
 		else
-			vim.api.nvim_buf_set_extmark(0, M.namespace, line, 0, {
-				virt_text = { { comment_text, "Comment" } },
-				virt_text_pos = "eol",
-			})
+			-- Add actual comment
+			M.add_actual_comment(line, comment_text)
 		end
 	end
 	print("Diagnostic comments update complete")
 end
 
--- Flag to track whether the comments are currently visible
+-- Function to add an actual comment to the buffer
+function M.add_actual_comment(line, comment_text)
+	local current_line = vim.api.nvim_buf_get_lines(0, line, line + 1, false)[1]
+	if M.config.comment_style == "above" then
+		vim.api.nvim_buf_set_lines(0, line, line, false, { comment_text, current_line })
+	else
+		local new_line = current_line .. " " .. comment_text
+		vim.api.nvim_buf_set_lines(0, line, line + 1, false, { new_line })
+	end
+end
+
+-- Function to remove all actual diagnostic comments from the buffer
+function M.remove_actual_comments()
+	local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	local new_lines = {}
+	local i = 1
+	while i <= #lines do
+		if not lines[i]:match("^" .. vim.pesc(M.config.comment_prefix) .. " %u+: ") then
+			if M.config.comment_style == "inline" then
+				lines[i] = lines[i]:gsub("%s*" .. vim.pesc(M.config.comment_prefix) .. " %u+: .*$", "")
+			end
+			table.insert(new_lines, lines[i])
+		end
+		i = i + 1
+	end
+	vim.api.nvim_buf_set_lines(0, 0, -1, false, new_lines)
+end
+
+-- Track whether comments are currently visible
 M.comments_visible = false
 
--- Function to toggle the diagnostic comments
+-- Function to toggle diagnostic comments on and off
 function M.toggle_diagnostic_comments()
 	local status, result = pcall(function()
-		-- If the comments are currently visible, hide them
 		if M.comments_visible then
-			vim.api.nvim_buf_clear_namespace(0, M.namespace, 0, -1)
+			-- Hide comments
+			if M.config.use_virtual_text then
+				vim.api.nvim_buf_clear_namespace(0, M.namespace, 0, -1)
+			else
+				M.remove_actual_comments()
+			end
 			M.comments_visible = false
 			print("Diagnostic comments hidden")
-		-- If the comments are not visible, show them
 		else
+			-- Show comments
 			M.update_diagnostic_comments()
 			M.comments_visible = true
 			print("Diagnostic comments shown")
 		end
 	end)
-	-- If there was an error, print it
 	if not status then
 		print("Error in toggle_diagnostic_comments: " .. tostring(result))
 	end
 end
 
--- Return the plugin table
 return M
