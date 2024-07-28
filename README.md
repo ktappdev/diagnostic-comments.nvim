@@ -1,13 +1,16 @@
 # Diagnostic Comments for Neovim
 
-A lightweight Neovim plugin that enhances code diagnostics by displaying them as comments.
+A lightweight Neovim plugin that enhances code diagnostics by displaying them as comments above the current line.
 
 ## Features
 
-- Display diagnostic messages as comments above the corresponding line or inline
+- Display diagnostic messages as comments on the current line
 - Toggle diagnostic comments on/off with a customizable keymap
 - Configurable comment style (above or inline)
-- Non-intrusive: uses virtual text to avoid modifying the actual buffer content
+- Option to use virtual text or actual comments
+- Focus on the current line for improved performance and usability
+
+- I originally wrote this plugin to make my workflow with llm.nvim smoother, Yes I am truely lazy.
 
 ## Installation
 
@@ -40,27 +43,33 @@ use {
 ## Configuration
 
 Here's an example of how to configure the plugin:
+These are the defaults, so if this works for you there is nothing to set.
 
 ```lua
 require('diagnostic-comments').setup({
   comment_style = "above",  -- or "inline"
-  keymap = "<leader>dc",    -- customize this to your preferred key mapping
+  keymap = "<leader>dc",     -- customize this to your preferred key mapping
+  comment_prefix = "//",     -- prefix for comments
+  use_virtual_text = false    -- set to true for virtual text
 })
 ```
 
 ### Options
 
 - `comment_style`: Determines where the diagnostic comments appear
-  - `"above"`: Shows comments on a virtual line above the diagnostic (default)
-  - `"inline"`: Shows comments at the end of the line as virtual text
+  - `"above"`: Shows comments on a line above the diagnostic
+  - `"inline"`: Shows comments at the end of the line (default)
 - `keymap`: The key mapping to toggle diagnostic comments on/off
+- `comment_prefix`: The prefix used for comments (default: "--")
+- `use_virtual_text`: Whether to use virtual text (true) or actual comments (false)
 
 ## Usage
 
 After installation and configuration, you can use the plugin as follows:
 
-1. Press your configured keymap (default: `<leader>dc`) to toggle diagnostic comments on/off.
-2. When enabled, diagnostic messages will appear as comments either above the line or inline, depending on your configuration.
+1. Move your cursor to a line with a diagnostic.
+2. Press your configured keymap (default: `<leader>dc`) to toggle the diagnostic comment on/off for that line.
+3. The diagnostic message will appear as a comment either above the line or inline, depending on your configuration.
 
 ## Contributing
 
@@ -91,5 +100,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 If you encounter any issues or have questions, please file an issue on the GitHub repository.
-
 We appreciate your feedback and contributions to make this plugin better!
+
+## Roadmap
+
+Here are some features and improvements we're considering for future releases:
+
+1. **Auto-detect comment style**: Automatically detect and use the appropriate comment syntax for the current file type (e.g., '//' for JavaScript, '#' for Python, '--' for Lua).
+
+2. **Multiple diagnostic display**: Show multiple diagnostics for a single line, either as separate comments or in a condensed format.
+
+3. **Customizable formatting**: Allow users to customize the format of diagnostic comments, including severity icons, colors, and text formatting.
+
+4. **Integration with other plugins**: Explore integration possibilities with popular Neovim plugins like Telescope or nvim-cmp for enhanced functionality.
+
+5. **Floating window option**: Add an option to display diagnostics in a floating window instead of as comments.
+
+6. **Diagnostic filtering**: Allow users to filter which types of diagnostics are displayed (e.g., only errors, or exclude certain diagnostic codes).
+
+7. **Localization support**: Add support for displaying diagnostic messages in different languages.
+
+8. **Performance optimizations**: Continuous improvements to ensure the plugin remains fast and efficient, especially for large files.
+
+9. **Code actions integration**: Provide quick-fix options directly from the diagnostic comments.
+
+We welcome community input on prioritizing these features and suggestions for additional improvements!
