@@ -1,5 +1,5 @@
 -- Diagnostic Comments Plugin for Neovim
--- This plugin allows for toggling diagnostic comments, either as virtual text or actual comments in the buffer.
+-- This plugin allows for toggling diagnostic comments on the current line, either as virtual text or actual comments.
 
 local M = {}
 
@@ -8,7 +8,7 @@ M.namespace = vim.api.nvim_create_namespace("diagnostic_comments")
 
 -- Default configuration options
 M.config = {
-	comment_style = "above", -- 'above' or 'inline'
+	comment_style = "inline", -- 'above' or 'inline'
 	keymap = "<leader>dc", -- default keymap to toggle diagnostic comments
 	comment_prefix = "--", -- prefix for comments
 	use_virtual_text = true, -- toggle between virtual and actual comments
@@ -18,6 +18,7 @@ M.config = {
 function M.setup(opts)
 	-- Merge user config with default config
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
+
 	-- Set up the keymap for toggling diagnostic comments
 	vim.api.nvim_set_keymap(
 		"n",
@@ -28,93 +29,95 @@ function M.setup(opts)
 	print("Diagnostic comments plugin setup complete")
 end
 
--- Function to update diagnostic comments
-function M.update_diagnostic_comments()
-	print("Updating diagnostic comments")
-	-- Clear existing comments
+-- Function to update diagnostic comment for the current line
+function M.update_diagnostic_comment()
+	local current_line = vim.api.nvim_win_get_cursor(0)[1] - 1
+
+	-- Clear existing comment
 	if M.config.use_virtual_text then
-		vim.api.nvim_buf_clear_namespace(0, M.namespace, 0, -1)
+		vim.api.nvim_buf_clear_namespace(0, M.namespace, current_line, current_line + 1)
 	else
-		M.remove_actual_comments()
+		M.remove_actual_comment(current_line)
 	end
-	-- Get diagnostics for the current buffer
-	local diagnostics = vim.diagnostic.get(0)
-	print("Number of diagnostics: " .. #diagnostics)
-	-- Add comments for each diagnostic
-	for _, diagnostic in ipairs(diagnostics) do
-		local line = diagnostic.lnum
+
+	-- Get diagnostics for the current line
+	local diagnostics = vim.diagnostic.get(0, { lnum = current_line })
+
+	if #diagnostics > 0 then
+		local diagnostic = diagnostics[1] -- We'll use the first diagnostic if there are multiple
 		local message = diagnostic.message
 		local severity = vim.diagnostic.severity[diagnostic.severity]
 		local comment_text = string.format("%s %s: %s", M.config.comment_prefix, severity, message)
+
 		if M.config.use_virtual_text then
 			-- Add virtual text
 			if M.config.comment_style == "above" then
-				vim.api.nvim_buf_set_extmark(0, M.namespace, line, 0, {
+				vim.api.nvim_buf_set_extmark(0, M.namespace, current_line, 0, {
 					virt_lines = { { { comment_text, "Comment" } } },
 					virt_lines_above = true,
 				})
 			else
-				vim.api.nvim_buf_set_extmark(0, M.namespace, line, 0, {
+				vim.api.nvim_buf_set_extmark(0, M.namespace, current_line, 0, {
 					virt_text = { { comment_text, "Comment" } },
 					virt_text_pos = "eol",
 				})
 			end
 		else
 			-- Add actual comment
-			M.add_actual_comment(line, comment_text)
+			M.add_actual_comment(current_line, comment_text)
 		end
+		print("Diagnostic comment added")
+	else
+		print("No diagnostics on current line")
 	end
-	print("Diagnostic comments update complete")
 end
 
 -- Function to add an actual comment to the buffer
 function M.add_actual_comment(line, comment_text)
-	local current_line = vim.api.nvim_buf_get_lines(0, line, line + 1, false)[1]
+	local current_line_text = vim.api.nvim_buf_get_lines(0, line, line + 1, false)[1]
 	if M.config.comment_style == "above" then
-		vim.api.nvim_buf_set_lines(0, line, line, false, { comment_text, current_line })
+		vim.api.nvim_buf_set_lines(0, line, line, false, { comment_text, current_line_text })
 	else
-		local new_line = current_line .. " " .. comment_text
+		local new_line = current_line_text .. " " .. comment_text
 		vim.api.nvim_buf_set_lines(0, line, line + 1, false, { new_line })
 	end
 end
 
--- Function to remove all actual diagnostic comments from the buffer
-function M.remove_actual_comments()
-	local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+-- Function to remove the actual diagnostic comment from the current line
+function M.remove_actual_comment(line)
+	local lines = vim.api.nvim_buf_get_lines(0, line, line + 2, false)
 	local new_lines = {}
-	local i = 1
-	while i <= #lines do
-		if not lines[i]:match("^" .. vim.pesc(M.config.comment_prefix) .. " %u+: ") then
-			if M.config.comment_style == "inline" then
-				lines[i] = lines[i]:gsub("%s*" .. vim.pesc(M.config.comment_prefix) .. " %u+: .*$", "")
-			end
-			table.insert(new_lines, lines[i])
+	for i, l in ipairs(lines) do
+		if i == 1 and M.config.comment_style == "inline" then
+			l = l:gsub("%s*" .. vim.pesc(M.config.comment_prefix) .. " %u+: .*$", "")
 		end
-		i = i + 1
+		if not l:match("^" .. vim.pesc(M.config.comment_prefix) .. " %u+: ") then
+			table.insert(new_lines, l)
+		end
 	end
-	vim.api.nvim_buf_set_lines(0, 0, -1, false, new_lines)
+	vim.api.nvim_buf_set_lines(0, line, line + #lines, false, new_lines)
 end
 
--- Track whether comments are currently visible
-M.comments_visible = false
+-- Track whether comment is currently visible on the current line
+M.comment_visible = false
 
--- Function to toggle diagnostic comments on and off
+-- Function to toggle diagnostic comment on and off for the current line
 function M.toggle_diagnostic_comments()
 	local status, result = pcall(function()
-		if M.comments_visible then
-			-- Hide comments
+		local current_line = vim.api.nvim_win_get_cursor(0)[1] - 1
+		if M.comment_visible then
+			-- Hide comment
 			if M.config.use_virtual_text then
-				vim.api.nvim_buf_clear_namespace(0, M.namespace, 0, -1)
+				vim.api.nvim_buf_clear_namespace(0, M.namespace, current_line, current_line + 1)
 			else
-				M.remove_actual_comments()
+				M.remove_actual_comment(current_line)
 			end
-			M.comments_visible = false
-			print("Diagnostic comments hidden")
+			M.comment_visible = false
+			print("Diagnostic comment hidden")
 		else
-			-- Show comments
-			M.update_diagnostic_comments()
-			M.comments_visible = true
-			print("Diagnostic comments shown")
+			-- Show comment
+			M.update_diagnostic_comment()
+			M.comment_visible = true
 		end
 	end)
 	if not status then
