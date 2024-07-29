@@ -4,7 +4,7 @@ A lightweight Neovim plugin that enhances code diagnostics by displaying them as
 
 This was made for me and this is how I use it with the amazing melbaldove/llm.nvim.
 
-<./llm.nvim + diagnistic-comments.mp4>
+https://github.com/user-attachments/assets/5850d9ab-998b-48f3-81b6-ce8ec1208e8b
 
 In a nutshell it dumps the error to a comment abone the line with the error.
 
