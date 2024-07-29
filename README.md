@@ -2,6 +2,14 @@
 
 A lightweight Neovim plugin that enhances code diagnostics by displaying them as comments above the current line.
 
+This was made for me and this is how I use it with the amazing melbaldove/llm.nvim.
+
+<./llm.nvim + diagnistic-comments.mp4>
+
+In a nutshell it dumps the error to a comment abone the line with the error.
+
+Perfect for copying to llms
+
 ## Features
 
 - Display diagnostic messages as comments on the current line
