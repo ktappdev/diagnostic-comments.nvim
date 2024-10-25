@@ -23,7 +23,6 @@ function M.setup(opts)
 		':lua require("diagnostic-comments").add_diagnostic_comment()<CR>',
 		{ noremap = true, silent = true }
 	)
-	print("Diagnostic comments plugin setup complete")
 end
 
 -- Function to update diagnostic comment for the current line
@@ -49,9 +48,9 @@ function M.update_diagnostic_comment()
 			-- Add actual comment
 			M.add_actual_comment(current_line, comment_text)
 		end
-		print("Diagnostic comment added")
+		-- print("Diagnostic comment added")
 	else
-		print("No diagnostics on current line")
+		-- print("No diagnostics on current line")
 	end
 end
 
